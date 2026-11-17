@@ -95,12 +95,28 @@ class TestFormParser:
             req.max_form_parts = 1
             pytest.raises(RequestEntityTooLarge, lambda: req.form["foo"])
 
-    def test_urlencoded_no_max(self) -> None:
+    def test_urlencoded_max_form_parts(self) -> None:
         r = Request.from_values(method="POST", data={"a": 1, "b": 2})
         r.max_form_parts = 1
+        pytest.raises(RequestEntityTooLarge, lambda: r.form["a"])
+
+    def test_urlencoded_max_form_parts_at_limit(self) -> None:
+        r = Request.from_values(method="POST", data={"a": 1, "b": 2})
+        r.max_form_parts = 2
 
         assert r.form["a"] == "1"
         assert r.form["b"] == "2"
+
+    def test_urlencoded_max_form_parts_none(self) -> None:
+        data = "&".join(f"f{i}=v" for i in range(2000)).encode()
+        r = Request.from_values(
+            method="POST",
+            data=data,
+            content_type="application/x-www-form-urlencoded",
+        )
+        r.max_form_parts = None
+
+        assert len(r.form) == 2000
 
     def test_urlencoded_silent_decode(self) -> None:
         r = Request.from_values(

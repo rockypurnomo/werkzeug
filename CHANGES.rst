@@ -3,6 +3,10 @@
 Version 3.2.0
 -------------
 
+-   ``Request.max_form_parts`` is applied to
+    ``application/x-www-form-urlencoded`` data as well as
+    ``multipart/form-data``, limiting the number of fields that are parsed
+    and raising ``RequestEntityTooLarge`` if the limit is exceeded.
 -   Drop support for Python 3.9 and 3.10. :pr:`3098`
 -   Remove previous deprecated code: :pr:`3099`
 

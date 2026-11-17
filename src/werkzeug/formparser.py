@@ -88,9 +88,9 @@ def _parse_form_data(
         check, it does not replace using a limited stream and
         ``max_content_length``.
     :param max_form_parts: If more than this number of ``multipart/form-data``
-        parts are received, raise :exc:`.RequestEntityTooLarge`. This is an
-        additional check, it does not replace using a limited stream and
-        ``max_content_length``.
+        parts or ``application/x-www-form-urlencoded`` fields are received,
+        raise :exc:`.RequestEntityTooLarge`. This is an additional check, it
+        does not replace using a limited stream and ``max_content_length``.
     :param cls: an optional dict class to use.  If this is not specified
                        or `None` the default :class:`MultiDict` is used.
     :param silent: If set to False parsing errors will not be caught.
@@ -160,9 +160,9 @@ class _FormDataParser:
         check, it does not replace using a limited stream and
         ``max_content_length``.
     :param max_form_parts: If more than this number of ``multipart/form-data``
-        parts are received, raise :exc:`.RequestEntityTooLarge`. This is an
-        additional check, it does not replace using a limited stream and
-        ``max_content_length``.
+        parts or ``application/x-www-form-urlencoded`` fields are received,
+        raise :exc:`.RequestEntityTooLarge`. This is an additional check, it
+        does not replace using a limited stream and ``max_content_length``.
     :param cls: an optional dict class to use.  If this is not specified
                        or `None` the default :class:`MultiDict` is used.
     :param silent: If set to False parsing errors will not be caught.
@@ -174,6 +174,11 @@ class _FormDataParser:
     .. versionchanged:: 3.2
         The ``cls`` parameter and attribute are deprecated and will be removed
         in Werkzeug 4.0. They will always be ``ImmutableMultiDict``.
+
+    .. versionchanged:: 3.2
+        ``max_form_parts`` is applied to
+        ``application/x-www-form-urlencoded`` data, limiting the number of
+        fields that are parsed.
 
     .. versionchanged:: 3.1.9
         ``max_form_memory_size`` is not applied to
@@ -319,14 +324,22 @@ class _FormDataParser:
         # The stream must already be limited to max_content_length.
         # max_form_memory_size can't apply, since the entire stream is read at
         # once instead of incrementally parsed.
-        # max_form_parts could be applied here, but doesn't impose a useful
-        # limit given the previous points and because the parser is much simpler
-        # and faster already.
-        items = parse_qsl(
-            stream.read().decode(),
-            keep_blank_values=True,
-            errors="werkzeug.url_quote",
-        )
+        # max_form_parts does apply: a byte limit does not bound the number
+        # of fields, and each field becomes an entry in the resulting
+        # MultiDict, so a small body can still exhaust memory and CPU with
+        # a very large number of very small fields.
+        data = stream.read().decode()
+
+        try:
+            items = parse_qsl(
+                data,
+                keep_blank_values=True,
+                errors="werkzeug.url_quote",
+                max_num_fields=self.max_form_parts,
+            )
+        except ValueError:
+            # parse_qsl raises ValueError if max_num_fields is exceeded.
+            raise RequestEntityTooLarge() from None
 
         if self.cls is not None:
             return stream, self.cls(items), self.cls()

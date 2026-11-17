@@ -45,10 +45,12 @@ exceeded.
     if any non-file part is larger than this number of bytes. File parts can
     be larger, they are moved to disk at this limit. The default is 500kB. This
     is an additional check, it does not replace ``max_content_length``.
--   :attr:`~Request.max_form_parts` - Stop parsing ``multipart/form-data`` if
-    more than this number of parts are received. This is useful to stop a very
-    large number of very small fields, especially files. The default is 1000.
-    This is an additional check, it does not replace ``max_content_length``.
+-   :attr:`~Request.max_form_parts` - Stop parsing form data if more than
+    this number of parts or fields are received. This applies to
+    ``multipart/form-data`` parts and ``application/x-www-form-urlencoded``
+    fields. This is useful to stop a very large number of very small fields,
+    especially files. The default is 1000. This is an additional check, it
+    does not replace ``max_content_length``.
 
 Each of these values can be set on the ``Request`` class to affect the default
 for all requests, or on a ``request`` instance to change the behavior for a

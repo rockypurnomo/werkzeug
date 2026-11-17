@@ -102,11 +102,15 @@ class Request(_SansIORequest):
     """
 
     max_form_parts = 1000
-    """Stop parsing ``multipart/form-data`` if more than this number of parts
-    are received, and raise :exc:`.RequestEntityTooLarge`. This is useful to
-    stop a very large number of very small fields, especially files. The
-    default is 1000. This is an additional check, it does not replace
-    :attr:`max_content_length`.
+    """Stop parsing form data if more than this number of parts or fields
+    are received, and raise :exc:`.RequestEntityTooLarge`. This applies to
+    ``multipart/form-data`` parts and ``application/x-www-form-urlencoded``
+    fields. This is useful to stop a very large number of very small fields,
+    especially files. The default is 1000. This is an additional check, it
+    does not replace :attr:`max_content_length`.
+
+    .. versionchanged:: 3.2
+        This is applied to ``application/x-www-form-urlencoded`` data.
 
     .. versionadded:: 2.2.3
     """
